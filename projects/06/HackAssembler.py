@@ -5,23 +5,23 @@ import os
 
 class Parser:
     def __init__(self, file):
-
         # Opens the input file/stream and gets ready to parse it
-
-        pass
-
+        self.file = file
+        instruction_list = self.file.readlines()
+        instruction_list = sanitize_file(instruction_list)
+        self.instruction_stack = make_stack(instruction_list)
+        self.current_command = None
 
     def has_more_lines(self) -> bool:
 
         # Are there more commands in the input?
-
-        pass
+        return len(self.instruction_stack) > 0
 
     def advance(self):
 
         # Reads the next command from the input and makes it the current command. Should be called only if has_more_lines() is true. Initially there is no current command.
 
-        pass
+        self.current_command = self.instruction_stack.pop()
 
     def instruction_type(self) -> str:
 
@@ -30,26 +30,36 @@ class Parser:
         # C_COMMAND for dest=comp;jump
         # L_COMMAND (actually, pseudo-command) for (Xxx) where Xxx is a symbol.
 
-        pass
+        if self.current_command[0] == '@':
+            return 'A_COMMAND'
+        elif self.current_command[0] == '(':
+            return 'L_COMMAND'
+        else:
+            return 'C_COMMAND'
 
     def symbol(self):
         pass
 
     def dest(self):
-        pass
+        # Returns the dest mnemonic in the current C-command (8 possibilities).
+        # Should be called only when instruction_type() is C_COMMAND.
+
+        if self.current_command == 'C_COMMAND':
+            return Code.dest(self.current_command)
 
     def comp(self):
-        pass
+        if self.current_command == 'C_COMMAND':
+            return Code.comp(self.current_command)
 
     def jump(self):
-        pass
-
-
+        if self.current_command == 'C_COMMAND':
+            return Code.jump(self.current_command)
 
 
 class Code:
-    
-    def dest(self, mnemonic: str) -> str:
+
+    @staticmethod
+    def dest(mnemonic: str) -> str:
 
         # Returns the binary code of the dest mnemonic
 
@@ -69,8 +79,8 @@ class Code:
             return "111"
         else:
             return "000"
-        
-    def comp(self, mnemonic: str) -> str:
+    @staticmethod
+    def comp(mnemonic: str) -> str:
 
         # Returns the binary code of the comp mnemonic
 
@@ -133,7 +143,8 @@ class Code:
         else:
             return "0000000"
 
-    def jump(self, mnemonic: str) -> str:
+    @staticmethod
+    def jump(mnemonic: str) -> str:
 
         # Returns the binary code of the jump mnemonic
 
@@ -154,11 +165,12 @@ class Code:
         else:
             return "000"
 
+
 class SymbolTable:
-    
+
     def __init__(self):
         self.table = {}
-    
+
     def add_entry(self, symbol, address):
 
         # Adds the pair (symbol, address) to the table
@@ -181,17 +193,52 @@ class SymbolTable:
 class Assembler:
     pass
 
-def read_file(file_name: str) -> str:
-    
-        # Reads the file and returns the contents as a string
-    
-        with open(file_name, 'r') as f:
-            return f.read()
 
+def read_file(file_name: str) -> str:
+
+    # Reads the file and returns the contents as a list of instructions
+    with open(file_name, "r") as f:
+        return f.readlines()
+
+def sanitize_file(instructions: list) -> list:
+
+    # Removes comments and whitespace from the instructions
+
+    sanitized_instructions = []
+
+    for instruction in instructions:
+        instruction = instruction.split("//")[0]
+        instruction = instruction.strip()
+        if instruction != "":
+            sanitized_instructions.append(instruction)
+
+    return sanitized_instructions
+
+def make_stack(instructions: list):
+
+    # Creates a stack of instructions by reversing the list
+    # This is done so that the first instruction is at the top of the stack
+    # and can be popped off first
+    # This is done to make the assembly process easier
+
+    stack = []
+
+    for instruction in instructions:
+        stack.append(instruction)
+
+    stack.reverse()
+
+    return stack
 
 def main():
 
-    # Reads the name of the file to be assembled
+    # Reads the name of the file to be assembled from command line arg
+
+    if len(sys.argv) != 2:
+        print("Usage: python HackAssembler.py [Prog.asm]")
+        sys.exit(1)
+
+    file_name = sys.argv[1]
 
     # Creates a Parser object to parse the input file
 
@@ -204,4 +251,3 @@ def main():
     # Writes the translated Hack machine language to the output file
 
     pass
-
