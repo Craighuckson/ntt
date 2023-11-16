@@ -277,6 +277,11 @@ def main():
         file_name = sys.argv[1]
 
     # Creates a Parser object to parse the input file
+    p = Parser(file_name)
+    for line in range(len(p.stack)):
+        if p.has_more_lines():
+            p.advance()
+    
 
     # Creates a Code object to translate Hack assembly language mnemonics into binary codes
 
