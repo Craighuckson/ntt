@@ -1,4 +1,4 @@
-from HackAssembler import sanitize_file, make_stack, Code
+from HackAssembler import sanitize_file, make_stack, Code, Parser
 
 
 def test_sanitize_file():
@@ -25,3 +25,20 @@ def test_dest():
     assert dest("AD") == "110"
     assert dest("AMD") == "111"
     assert dest("XYZ") == "000"  # Test with an invalid mnemonic
+
+
+def test_parser_dest():
+    # mock a fake file to test with
+
+    p = Parser("C:\\Users\\Cr\\ntt\\projects\\06\\Add.asm")
+    p.instruction_type = "C_COMMAND"
+    assert p.dest("D=M") == "D"
+    assert p.dest("M=D") == "M"
+    assert p.dest("D;JGT") == None
+
+
+def test_get_instruction_type():
+    p = Parser("C:\\Users\\Cr\\ntt\\projects\\06\\Add.asm")
+    assert p.get_instruction_type("@2") == "A_COMMAND"
+    assert p.get_instruction_type("(LOOP)") == "L_COMMAND"
+    assert p.get_instruction_type("D=D+A") == "C_COMMAND"

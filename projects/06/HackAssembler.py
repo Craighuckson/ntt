@@ -1,59 +1,107 @@
-#HackAssembler.py
-
+# HackAssembler.py
+# python
 import sys
 import os
 
+
 class Parser:
-    def __init__(self, file):
+    def __init__(self, file: str) -> None:
         # Opens the input file/stream and gets ready to parse it
-        self.file = file
-        instruction_list = self.file.readlines()
-        instruction_list = sanitize_file(instruction_list)
-        self.instruction_stack = make_stack(instruction_list)
-        self.current_command = None
+        self.read_file(file)
+        self.sanitize_file(self.instructions)
+        self.make_stack(self.sanitized_instructions)
+
+    def read_file(self, file_name: str) -> list:
+
+        # Reads the file and returns the contents as a list of instructions
+
+        with open(file_name, "r") as f:
+            self.instructions = f.readlines()
+
+    def sanitize_file(self, instructions: list[str]) -> None:
+
+        # Removes comments and whitespace from the instructions
+        self.sanitized_instructions: list[str] = []
+
+        for instruction in instructions:
+            instruction = instruction.split("//")[0]
+            instruction = instruction.strip()
+            if instruction != "":
+                self.sanitized_instructions.append(instruction)
+
+    def make_stack(self, instructions: list[str]) -> None:
+
+        # Creates a stack of instructions by reversing the list
+        # This is done so that the first instruction is at the top of the stack
+        # and can be popped off first
+        # This is done to make the assembly process easier
+
+        self.stack: list[str] = []
+
+        for instruction in instructions:
+            self.stack.append(instruction)
+
+        self.stack.reverse()
 
     def has_more_lines(self) -> bool:
 
         # Are there more commands in the input?
-        return len(self.instruction_stack) > 0
+        return len(self.stack) > 0
 
     def advance(self):
 
-        # Reads the next command from the input and makes it the current command. Should be called only if has_more_lines() is true. Initially there is no current command.
+        """
+        Reads the next command from the input and makes it the current command.
+        Should be called only if has_more_lines() is true.
+        Initially there is no current command
+        """
 
-        self.current_command = self.instruction_stack.pop()
+        self.current_command = self.stack.pop()
+        print(self.current_command)
 
-    def instruction_type(self) -> str:
+    def get_instruction_type(self, instruction) -> str:
 
         # Returns the type of the current command:
         # A_COMMAND for @Xxx where Xxx is either a symbol or a decimal number
         # C_COMMAND for dest=comp;jump
         # L_COMMAND (actually, pseudo-command) for (Xxx) where Xxx is a symbol.
 
-        if self.current_command[0] == '@':
-            return 'A_COMMAND'
-        elif self.current_command[0] == '(':
-            return 'L_COMMAND'
+        if instruction.startswith('@'):
+            self.instruction_type = 'A_COMMAND'
+        elif instruction.startswith('('):
+            self.instruction_type = 'L_COMMAND'
         else:
-            return 'C_COMMAND'
+            self.instruction_type = 'C_COMMAND'
+
+        return self.instruction_type
 
     def symbol(self):
         pass
 
-    def dest(self):
+    def dest(self, instruction):
         # Returns the dest mnemonic in the current C-command (8 possibilities).
         # Should be called only when instruction_type() is C_COMMAND.
 
-        if self.current_command == 'C_COMMAND':
-            return Code.dest(self.current_command)
+        if '=' not in instruction:
+            return None
+        if self.instruction_type == 'C_COMMAND':
+            return instruction.split('=')[0]
 
     def comp(self):
-        if self.current_command == 'C_COMMAND':
-            return Code.comp(self.current_command)
+
+        # Returns the comp mnemonic in the current C-command (28 possibilities).
+        # Should be called only when instruction_type() is C_COMMAND.
+
+        if self.instruction_type == 'C_COMMAND':
+            return self.current_command.split('=')[1].split(';')[0]
 
     def jump(self):
-        if self.current_command == 'C_COMMAND':
-            return Code.jump(self.current_command)
+
+        # Returns the jump mnemonic in the current C-command (8 possibilities).
+        # Should be called only when instruction_type() is C_COMMAND.
+
+        if self.instruction_type == 'C_COMMAND':
+            return self.current_command.split(';')[1]
 
 
 class Code:
@@ -79,6 +127,7 @@ class Code:
             return "111"
         else:
             return "000"
+
     @staticmethod
     def comp(mnemonic: str) -> str:
 
@@ -191,44 +240,12 @@ class SymbolTable:
 
 
 class Assembler:
-    pass
+
+    def __init__(self) -> None:
+        pass
 
 
-def read_file(file_name: str) -> str:
 
-    # Reads the file and returns the contents as a list of instructions
-    with open(file_name, "r") as f:
-        return f.readlines()
-
-def sanitize_file(instructions: list) -> list:
-
-    # Removes comments and whitespace from the instructions
-
-    sanitized_instructions = []
-
-    for instruction in instructions:
-        instruction = instruction.split("//")[0]
-        instruction = instruction.strip()
-        if instruction != "":
-            sanitized_instructions.append(instruction)
-
-    return sanitized_instructions
-
-def make_stack(instructions: list):
-
-    # Creates a stack of instructions by reversing the list
-    # This is done so that the first instruction is at the top of the stack
-    # and can be popped off first
-    # This is done to make the assembly process easier
-
-    stack = []
-
-    for instruction in instructions:
-        stack.append(instruction)
-
-    stack.reverse()
-
-    return stack
 
 def main():
 
@@ -238,7 +255,26 @@ def main():
         print("Usage: python HackAssembler.py [Prog.asm]")
         sys.exit(1)
 
-    file_name = sys.argv[1]
+    if sys.argv[1] == 'test':
+        p: Parser = Parser("C:\\Users\\Cr\\ntt\\projects\\06\\Add.asm")
+        p.advance()
+        p.get_instruction_type(p.current_command)
+        print(bin(int(p.current_command[1:]))[2:])
+        print(p.instruction_type)
+        p.advance()
+        p.get_instruction_type(p.current_command)
+        print(p.instruction_type)
+        dest = p.dest(p.current_command)
+        print(Code.dest(dest))
+
+        p.advance()
+        p.advance()
+        p.advance()
+        p.advance()
+
+        print(p.has_more_lines())
+    else:
+        file_name = sys.argv[1]
 
     # Creates a Parser object to parse the input file
 
@@ -251,3 +287,7 @@ def main():
     # Writes the translated Hack machine language to the output file
 
     pass
+
+
+if __name__ == "__main__":
+    main()
